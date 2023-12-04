@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        input[type="file"],
+        input[type="submit"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="file"] {
+            background-color: #f9f9f9;
+        }
+
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
+        p {
+            color: #333;
+            margin: 5px 0;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+            margin-right: 10px;
+        }
+
+        .button-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .button-container input[type="submit"] {
+            margin-left: 10px;
+        }
+
+        .error-message {
+            color: red;
+        }
+
+        .success-message {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Assignments Page</h1>
+
+    {% if deadline_passed %}
+        <p class="error-message">Deadline has passed. Task submission is closed.</p>
+    {% endif %}
+
+    <form action="{{ url_for('add_task') }}" method="post" enctype="multipart/form-data">
+        <label for="task_description">Task Description:</label>
+        <input type="text" name="task_description" required>
+
+        <label for="prof_email">Email:</label>
+        <input type="text" name="prof_email" required>
+
+        <label for="deadline">Deadline:</label>
+        <input type="datetime-local" name="deadline" required>
+
+        <label for="file">Upload Task File:</label>
+        <input type="file" name="file" required>
+
+        <div class="button-container">
+            <input type="submit" value="Add Task">
+        </div>
+    </form>
+
+    {% for task in tasks %}
+        <hr>
+        <p>{{ task['description'] }}</p>
+        <p>Deadline: {{ task['deadline'] }}</p>
+
+        {% if task['file_path'] %}
+            <a href="{{ task['file_path'] }}" download>Download Task</a>
+        {% endif %}
+
+        {% if task_manager.is_admin %}
+            <!-- Show options for the teacher -->
+            <form action="{{ url_for('upload_task', task_index=loop.index0) }}" method="post" enctype="multipart/form-data">
+                <label for="file">Upload Solution:</label>
+                <input type="file" name="file" required>
+                <div class="button-container">
+                    <input type="submit" value="Upload">
+                </div>
+            </form>
+
+            {% if not deadline_passed %}
+                <form action="{{ url_for('submit_solution', task_index=loop.index0) }}" method="post" enctype="multipart/form-data">
+                    <label for="solution">Submit Solution:</label>
+                    <input type="file" name="solution" required>
+                    <div class="button-container">
+                        <input type="submit" value="Submit">
+                    </div>
+                </form>
+            {% endif %}
+
+            {% if deadline_passed and task['solution'] %}
+                <hr>
+                <p>Solution: {{ task['solution'] }}</p>
+                <form action="{{ url_for('grade_solution', task_index=loop.index0) }}" method="post">
+                    <label for="grade">Grade:</label>
+                    <input type="text" name="grade" required>
+                    <div class="button-container">
+                        <input type="submit" value="Submit Grade">
+                    </div>
+                </form>
+            {% endif %}
+        {% else %}
+            <!-- Show options for the student -->
+            {% if not deadline_passed %}
+                <form action="{{ url_for('submit_solution', task_index=loop.index0) }}" method="post" enctype="multipart/form-data">
+                    <label for="solution">Submit Solution:</label>
+                    <input type="file" name="solution" required>
+                    <div class="button-container">
+                        <input type="submit" value="Submit">
+                    </div>
+                </form>
+            {% endif %}
+            {% if deadline_passed and task['grade'] %}
+                <p>Grade: {{ task['grade'] }}</p>
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+</body>
+</html>
